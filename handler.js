@@ -49,29 +49,38 @@ function numberOfDaysBetween(d1, d2) {
   return Math.floor(diff / (1000 * 60 * 60 * 24))
 }
 
-module.exports.getRegisteredClans = (event, context) => {
+module.exports.getRegisteredClans = async (_, context) => {
   const query = {
     TableName: process.env.REGISTRY_TABLE
   }
 
-  dynamoDb.scan(query, (error, data) => {
-    if (error) {
-      console.error(error)
-      return
+  let data
+
+  try {
+    data = await dynamoDb.scan(query).promise()
+  } catch (error) {
+    console.error(error)
+    context.fail(error)
+  }
+
+  for (let item of data.Items) {
+    const message = {
+      Message: item.id,
+      TopicArn: process.env.REGISTERED_CLAN_TOPIC
     }
 
-    data.Items.forEach(item => {
-      const message = {
-        Message: item.id,
-        TopicArn: process.env.REGISTERED_CLAN_TOPIC
-      }
+    try {
+      await sns.publish(message).promise()
+    } catch (error) {
+      console.log(error)
+      context.fail(error)
+    }
+  }
 
-      sns.publish(message, context.done)
-    })
-  })
+  context.succeed()
 }
 
-module.exports.getClanRoster = (event, context) => {
+module.exports.getClanRoster = async (event, context) => {
   const clanId = getSnsMessage(event)
   const request = {
     uri: `${process.env.BUNGIE_BASE_URL}/GroupV2/${clanId}/Members/`,
@@ -81,32 +90,43 @@ module.exports.getClanRoster = (event, context) => {
     json: true
   }
 
-  rp(request)
-    .then(response => {
-      const roster = response.Response.results.map(result => {
-        return {
-          membershipId: result.destinyUserInfo.membershipId,
-          membershipType: result.destinyUserInfo.membershipType,
-          clanId
-        }
-      })
+  let response
 
-      roster.forEach(member => {
-        const message = {
-          Message: JSON.stringify(member),
-          TopicArn: process.env.CLAN_MEMBER_TOPIC
-        }
+  try {
+    response = await rp(request)
+  } catch (error) {
+    console.error(error)
+    context.fail(error)
+  }
 
-        sns.publish(message, context.done)
-      })
-    })
-    .catch(error => {
+  const roster = response.Response.results.map(result => {
+    return {
+      membershipId: result.destinyUserInfo.membershipId,
+      membershipType: result.destinyUserInfo.membershipType,
+      clanId
+    }
+  })
+
+  for (let member of roster) {
+    const message = {
+      Message: JSON.stringify(member),
+      TopicArn: process.env.CLAN_MEMBER_TOPIC
+    }
+
+    console.log('fetch profile for member', message)
+
+    try {
+      await sns.publish(message).promise()
+    } catch (error) {
       console.error(error)
-      context.done()
-    })
+      context.fail(error)
+    }
+  }
+
+  context.succeed()
 }
 
-module.exports.getMemberActivityProfile = (event, context) => {
+module.exports.getMemberActivityProfile = async (event, context) => {
   const message = JSON.parse(getSnsMessage(event))
 
   const request = {
@@ -117,31 +137,52 @@ module.exports.getMemberActivityProfile = (event, context) => {
     json: true
   }
 
-  rp(request)
-    .then(response => {
-      if (response.ErrorStatus === 'DestinyAccountNotFound') {
-        return
-      }
+  let response
 
-      const profile = createProfile(response)
-      const query = {
-        TableName: process.env.ACTIVITY_TABLE,
-        Item: {
-          clanId: message.clanId,
-          membershipId: message.membershipId,
-          profile
-        }
-      }
+  try {
+    response = await rp(request)
+  } catch (error) {
+    console.error(error)
+    context.fail(error)
+  }
 
-      dynamoDb.put(query, context.done)
-    })
-    .catch(error => {
-      console.error(error)
-      context.done()
-    })
+  if (response.ErrorStatus === 'DestinyAccountNotFound') {
+    context.fail('Member account not found')
+  }
+
+  let profile
+
+  try {
+    profile = createProfile(response)
+  } catch (error) {
+    console.log('Error creating profile for member', message.membershipId)
+    console.error(error)
+    context.fail(error)
+  }
+
+  const query = {
+    TableName: process.env.ACTIVITY_TABLE,
+    Item: {
+      clanId: message.clanId,
+      membershipId: message.membershipId,
+      profile
+    }
+  }
+
+  console.log('fetched profile for', message.membershipId)
+  console.log('---> profile', profile)
+
+  try {
+    await dynamoDb.put(query).promise()
+  } catch (error) {
+    console.error(error)
+    context.fail(error)
+  }
+
+  context.succeed()
 }
 
-module.exports.getInactiveMembers = (event, context, callback) => {
+module.exports.getInactiveMembers = async (event, context, callback) => {
   const clanId = event.pathParameters.clanId
 
   const query = {
@@ -152,18 +193,20 @@ module.exports.getInactiveMembers = (event, context, callback) => {
     }
   }
 
-  dynamoDb.query(query, (error, data) => {
-    if (error) {
-      callback(error, {
-        statusCode: 500
-      })
-    }
+  let data
 
-    const response = {
-      statusCode: 200,
-      body: JSON.stringify(data.Items)
-    }
+  try {
+    data = await dynamoDb.query(query).promise()
+  } catch (error) {
+    callback(error, {
+      statusCode: 500
+    })
+  }
 
-    callback(null, response)
-  })
+  const response = {
+    statusCode: 200,
+    body: JSON.stringify(data.Items)
+  }
+
+  callback(null, response)
 }
