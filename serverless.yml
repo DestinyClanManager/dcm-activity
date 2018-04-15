@@ -56,6 +56,11 @@ functions:
     events:
       - schedule: rate(6 hours)
 
+  garbageCollector:
+    handler: handler.cleanUp
+    events:
+      - sns: registered_clan_${opt:stage, self:provider.stage}
+
   rosterWorker:
     handler: handler.getClanRoster
     events:

@@ -80,6 +80,82 @@ module.exports.getRegisteredClans = async (_, context) => {
   context.succeed()
 }
 
+module.exports.cleanUp = async (event, context) => {
+  const clanId = getSnsMessage(event)
+  const query = {
+    TableName: process.env.ACTIVITY_TABLE,
+    KeyConditionExpression: 'clanId = :c',
+    ExpressionAttributeValues: {
+      ':c': clanId
+    }
+  }
+
+  let data
+
+  try {
+    data = await dynamoDb.query(query).promise()
+  } catch (error) {
+    console.error(error)
+    context.fail(error)
+  }
+
+  const activityReport = data.Items
+
+  const request = {
+    uri: `${process.env.BUNGIE_BASE_URL}/GroupV2/${clanId}/Members/`,
+    headers: {
+      'X-API-Key': process.env.BUNGIE_API_KEY
+    },
+    json: true
+  }
+
+  let response
+
+  try {
+    response = await rp(request)
+  } catch (error) {
+    console.error(error)
+    context.fail(error)
+  }
+
+  const roster = response.Response.results.map(result => {
+    return {
+      membershipId: result.destinyUserInfo.membershipId,
+      membershipType: result.destinyUserInfo.membershipType,
+      clanId
+    }
+  })
+
+  const membersToRemove = []
+
+  activityReport.forEach(member => {
+    if (roster.find(m => m.membershipId === member.membershipId) === undefined) {
+      membersToRemove.push(member.membershipId)
+    }
+  })
+
+  for (let membershipId of membersToRemove) {
+    const deleteQuery = {
+      TableName: process.env.ACTIVITY_TABLE,
+      Key: {
+        clanId,
+        membershipId
+      }
+    }
+
+    console.log('removing member', membershipId, 'from clan', clanId)
+
+    try {
+      await dynamoDb.delete(deleteQuery).promise()
+    } catch (error) {
+      console.error(error)
+      context.fail(error)
+    }
+  }
+
+  context.succeed()
+}
+
 module.exports.getClanRoster = async (event, context) => {
   const clanId = getSnsMessage(event)
   const request = {
