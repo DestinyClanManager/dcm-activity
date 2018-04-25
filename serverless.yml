@@ -71,6 +71,13 @@ functions:
     events:
       - sns: clan_member_${opt:stage, self:provider.stage}
 
+  startActivityReport:
+    handler: handler.startActivityReport
+    events:
+      - http:
+          path: inactive-members/
+          method: post
+
   getInactiveMembers:
     handler: handler.getInactiveMembers
     events:

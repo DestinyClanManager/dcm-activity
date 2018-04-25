@@ -286,3 +286,25 @@ module.exports.getInactiveMembers = async (event, context, callback) => {
 
   callback(null, response)
 }
+
+module.exports.startActivityReport = async (event, context, callback) => {
+  const { clanId } = JSON.parse(event.body)
+
+  const message = {
+    Message: clanId,
+    TopicArn: process.env.REGISTERED_CLAN_TOPIC
+  }
+
+  console.log('starting report for', clanId)
+
+  try {
+    await sns.publish(message).promise()
+  } catch (error) {
+    console.log(error)
+    callback(error, {
+      statusCode: 500
+    })
+  }
+
+  callback(null, { statusCode: 202 })
+}
