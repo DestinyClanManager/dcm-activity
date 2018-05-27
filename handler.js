@@ -37,7 +37,7 @@ function createExpansionsArray(versionsOwnedEnum) {
     case 3:
       expansions.push('Destiny 2')
       expansions.push('Curse of Osiris')
-      expansions.push('DLC2')
+      expansions.push('Warmind')
       break
   }
 
@@ -279,9 +279,11 @@ module.exports.getInactiveMembers = async (event, context, callback) => {
     })
   }
 
+  const filteredResults = data.Items.filter(i => i.profile !== undefined)
+
   const response = {
     statusCode: 200,
-    body: JSON.stringify(data.Items)
+    body: JSON.stringify(filteredResults)
   }
 
   callback(null, response)
