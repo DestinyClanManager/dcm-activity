@@ -24,21 +24,22 @@ function createProfile(bungieResponse) {
 }
 
 function createExpansionsArray(versionsOwnedEnum) {
+  const expansionsMap = {
+    1: 'Destiny 2',
+    2: 'Curse of Osiris',
+    3: 'Warmind',
+    4: 'Forsaken',
+    5: 'Black Armory',
+    6: `Joker's Wild`,
+    7: 'Penumbra'
+  }
+
   const expansions = []
 
-  switch (versionsOwnedEnum) {
-    case 1:
-      expansions.push('Destiny 2')
-      break
-    case 2:
-      expansions.push('Destiny 2')
-      expansions.push('Curse of Osiris')
-      break
-    case 3:
-      expansions.push('Destiny 2')
-      expansions.push('Curse of Osiris')
-      expansions.push('Warmind')
-      break
+  for (let i = 1; i <= versionsOwnedEnum; i++) {
+    if (expansionsMap[i]) {
+      expansions.push(expansionsMap[i])
+    }
   }
 
   return expansions
