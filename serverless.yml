@@ -20,34 +20,39 @@ provider:
     BUNGIE_BASE_URL: https://www.bungie.net/Platform
     BUNGIE_API_KEY: b5cf1e00bfe644f9bf294f31fe3ea71d
     CLAN_MEMBER_TOPIC: arn:aws:sns:us-east-1:410919218872:clan_member_${opt:stage, self:provider.stage}
+    GARBAGE_COLLECTION_TOPIC: arn:aws:sns:us-east-1:410919218872:garbage_collection_${opt:stage, self:provider.stage}
 
   iamRoleStatements:
-  - Effect: Allow
-    Action:
-      - dynamodb:Query
-      - dynamodb:Scan
-    Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.REGISTRY_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.REGISTRY_TABLE}'
 
-  - Effect: Allow
-    Action:
-      - dynamodb:Query
-      - dynamodb:Scan
-      - dynamodb:GetItem
-      - dynamodb:PutItem
-      - dynamodb:UpdateItem
-      - dynamodb:DeleteItem
-    Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.ACTIVITY_TABLE}"
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.ACTIVITY_TABLE}'
 
-  - Effect: Allow
-    Action:
-      - sns:Publish
-    Resource: ${self:provider.environment.REGISTERED_CLAN_TOPIC}
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource: ${self:provider.environment.REGISTERED_CLAN_TOPIC}
 
-  - Effect: Allow
-    Action:
-      - sns:Publish
-    Resource: ${self:provider.environment.CLAN_MEMBER_TOPIC}
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource: ${self:provider.environment.CLAN_MEMBER_TOPIC}
 
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource: ${self:provider.environment.GARBAGE_COLLECTION_TOPIC}
 
 # The `functions` block defines what code to deploy
 functions:
@@ -60,6 +65,7 @@ functions:
     handler: handler.cleanUp
     events:
       - sns: registered_clan_${opt:stage, self:provider.stage}
+      - sns: garbage_collection_${opt:stage, self.provider.stage}
 
   rosterWorker:
     handler: handler.getClanRoster
@@ -89,6 +95,16 @@ functions:
               paths:
                 clanId: true
 
+  startGarbageCollection:
+    handler: handler.startGarbageCollection
+    events:
+      - http:
+          path: inactive-members/{clanId}/clean-up
+          method: post
+          request:
+            parameters:
+              paths:
+                clanId: true
 
 resources:
   Resources:
@@ -97,18 +113,14 @@ resources:
       DeletionPolicy: Retain
       Properties:
         AttributeDefinitions:
-          -
-            AttributeName: clanId
+          - AttributeName: clanId
             AttributeType: S
-          -
-            AttributeName: membershipId
+          - AttributeName: membershipId
             AttributeType: S
         KeySchema:
-          -
-            AttributeName: clanId
+          - AttributeName: clanId
             KeyType: HASH
-          -
-            AttributeName: membershipId
+          - AttributeName: membershipId
             KeyType: RANGE
         ProvisionedThroughput:
           ReadCapacityUnits: 1

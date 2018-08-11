@@ -311,3 +311,24 @@ module.exports.startActivityReport = async (event, context, callback) => {
 
   callback(null, { statusCode: 202 })
 }
+
+module.exports.startGarbageCollection = async (event, context, callback) => {
+  const clanId = event.pathParameters.clanId
+  const message = {
+    Message: clanId,
+    TopicArn: process.env.GARBAGE_COLLECTION_TOPIC
+  }
+
+  try {
+    await sns.publish(message).promise()
+  } catch (error) {
+    console.error(error)
+    callback(error, { statusCode: 500 })
+  }
+
+  const response = {
+    statusCode: 201
+  }
+
+  callback(null, response)
+}
