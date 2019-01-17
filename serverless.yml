@@ -16,6 +16,7 @@ provider:
   environment:
     REGISTRY_TABLE: dcm_registry_${opt:stage, self:provider.stage}
     ACTIVITY_TABLE: dcm_activity_${opt:stage, self:provider.stage}
+    ACTIVITY_CONFIG_TABLE: dcm_activity_config_${opt:stage, self:provider.stage}
     REGISTERED_CLAN_TOPIC: arn:aws:sns:us-east-1:410919218872:registered_clan_${opt:stage, self:provider.stage}
     BUNGIE_BASE_URL: https://www.bungie.net/Platform
     BUNGIE_API_KEY: b5cf1e00bfe644f9bf294f31fe3ea71d
@@ -41,6 +42,16 @@ provider:
 
     - Effect: Allow
       Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.ACTIVITY_CONFIG_TABLE}'
+
+    - Effect: Allow
+      Action:
         - sns:Publish
       Resource: ${self:provider.environment.REGISTERED_CLAN_TOPIC}
 
@@ -57,35 +68,35 @@ provider:
 # The `functions` block defines what code to deploy
 functions:
   registryWorker:
-    handler: handler.getRegisteredClans
+    handler: src/handler.getRegisteredClans
     events:
       - schedule: rate(6 hours)
 
   garbageCollector:
-    handler: handler.cleanUp
+    handler: src/handler.cleanUp
     events:
       - sns: registered_clan_${opt:stage, self:provider.stage}
-      - sns: garbage_collection_${opt:stage, self.provider.stage}
+      - sns: garbage_collection_${opt:stage, self:provider.stage}
 
   rosterWorker:
-    handler: handler.getClanRoster
+    handler: src/handler.getClanRoster
     events:
       - sns: registered_clan_${opt:stage, self:provider.stage}
 
   profileWorker:
-    handler: handler.getMemberActivityProfile
+    handler: src/handler.getMemberActivityProfile
     events:
       - sns: clan_member_${opt:stage, self:provider.stage}
 
   startActivityReport:
-    handler: handler.startActivityReport
+    handler: src/handler.startActivityReport
     events:
       - http:
           path: inactive-members/
           method: post
 
   getInactiveMembers:
-    handler: handler.getInactiveMembers
+    handler: src/handler.getInactiveMembers
     events:
       - http:
           path: inactive-members/{clanId}
@@ -96,7 +107,7 @@ functions:
                 clanId: true
 
   startGarbageCollection:
-    handler: handler.startGarbageCollection
+    handler: src/handler.startGarbageCollection
     events:
       - http:
           path: inactive-members/{clanId}/clean-up
@@ -126,3 +137,18 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.ACTIVITY_TABLE}
+
+    DestinyClanManagerActivityConfigurationTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: clanId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: clanId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.ACTIVITY_CONFIG_TABLE}
