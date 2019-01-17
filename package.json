@@ -4,13 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "jest --config test/unit/jest.unit.config.js --coverage",
-    "test:integration": "jest --config test/integration/jest.integration.config.js"
+    "test": "npm run test:unit",
+    "test:unit": "jest --config test/unit/jest.unit.config.js --coverage"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.215.1",
     "request": "^2.88.0",
