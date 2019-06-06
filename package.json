@@ -10,16 +10,16 @@
   "keywords": [],
   "author": "",
   "dependencies": {
-    "aws-sdk": "^2.215.1",
+    "aws-sdk": "^2.469.0",
     "request": "^2.88.0",
     "request-promise": "^4.2.2"
   },
   "devDependencies": {
     "dotenv": "^6.1.0",
-    "jest": "^23.6.0",
+    "jest": "^24.8.0",
     "jest-trx-results-processor": "0.0.7",
     "nock": "^10.0.2",
-    "serverless": "^1.36.1",
+    "serverless": "^1.44.1",
     "supertest": "^3.3.0",
     "testdouble": "^3.8.2",
     "testdouble-jest": "^2.0.0"
