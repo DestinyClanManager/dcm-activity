@@ -14,7 +14,6 @@ provider:
   stage: dev
   region: us-east-1
   environment:
-    REGISTRY_TABLE: dcm_registry_${opt:stage, self:provider.stage}
     ACTIVITY_TABLE: dcm_activity_${opt:stage, self:provider.stage}
     ACTIVITY_CONFIG_TABLE: dcm_activity_config_${opt:stage, self:provider.stage}
     REGISTERED_CLAN_TOPIC: arn:aws:sns:us-east-1:410919218872:registered_clan_${opt:stage, self:provider.stage}
@@ -22,14 +21,9 @@ provider:
     BUNGIE_API_KEY: b5cf1e00bfe644f9bf294f31fe3ea71d
     CLAN_MEMBER_TOPIC: arn:aws:sns:us-east-1:410919218872:clan_member_${opt:stage, self:provider.stage}
     GARBAGE_COLLECTION_TOPIC: arn:aws:sns:us-east-1:410919218872:garbage_collection_${opt:stage, self:provider.stage}
+    REGISTRY_BASE_URL: #{REGISTRY_BASE_URL}#
 
   iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-      Resource: 'arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.REGISTRY_TABLE}'
-
     - Effect: Allow
       Action:
         - dynamodb:Query
