@@ -16,7 +16,6 @@ describe('activity profile factory', () => {
           displayName: 'gamertag'
         },
         dateLastPlayed: 'date-last-played',
-        versionsOwned: 4,
         characterIds: 'character-ids'
       }
 
@@ -32,7 +31,6 @@ describe('activity profile factory', () => {
         membershipId: 'membership-id',
         gamertag: 'gamertag',
         dateLastPlayed: 'date-last-played',
-        expansions: ['Destiny 2', 'Curse of Osiris', 'Warmind', 'Forsaken'],
         characterIds: 'character-ids',
         daysSinceLastPlayed: 14,
         isInactive: false
