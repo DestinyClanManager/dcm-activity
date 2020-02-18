@@ -13,6 +13,7 @@ provider:
   runtime: nodejs8.10
   stage: dev
   region: us-east-1
+  memorySize: 512
   environment:
     ACTIVITY_TABLE: dcm_activity_${opt:stage, self:provider.stage}
     ACTIVITY_CONFIG_TABLE: dcm_activity_config_${opt:stage, self:provider.stage}
