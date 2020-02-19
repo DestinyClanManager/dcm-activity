@@ -19,7 +19,8 @@ module.exports.getMemberActivityProfile = async (membershipType, membershipId) =
     headers: {
       'X-API-Key': process.env.BUNGIE_API_KEY
     },
-    json: true
+    json: true,
+    timeout: 5000
   }
 
   const response = await rp(request)

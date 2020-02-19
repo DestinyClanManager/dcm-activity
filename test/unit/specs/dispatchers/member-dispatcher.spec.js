@@ -1,20 +1,18 @@
 describe('member dispatcher', () => {
-  let subject, dispatchProvider
+  let subject, dispatchProvider, publish
 
   beforeEach(() => {
     dispatchProvider = td.replace('../../../../src/providers/dispatch-provider')
+    publish = td.func()
+    td.when(dispatchProvider.getInstance()).thenReturn({ publish })
     subject = require('../../../../src/dispatchers/member-dispatcher')
   })
 
   describe('publishClanMember', () => {
-    let publish
-
     beforeEach(async () => {
-      publish = td.function()
       const promise = td.function()
-      td.when(promise()).thenResolve()
       td.when(publish(td.matchers.anything())).thenReturn({ promise })
-      td.when(dispatchProvider.getInstance()).thenReturn({ publish })
+      td.when(promise()).thenResolve()
 
       const member = {}
       await subject.publishClanMember(member)

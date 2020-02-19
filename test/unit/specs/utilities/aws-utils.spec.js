@@ -8,26 +8,54 @@ describe('aws utils', () => {
   describe('getSnsMessage', () => {
     let actual
 
-    beforeEach(() => {
-      const event = {
-        Records: [
-          {
-            Sns: {
-              Message: 'the-fist-sns-message'
+    describe('when the message is not JSON', () => {
+      beforeEach(() => {
+        const event = {
+          Records: [
+            {
+              Sns: {
+                Message: 'the-fist-sns-message'
+              }
+            },
+            {
+              Sns: {
+                Message: 'the-second-sns-message'
+              }
             }
-          },
-          {
-            Sns: {
-              Message: 'the-second-sns-message'
-            }
-          }
-        ]
-      }
-      actual = subject.getSnsMessage(event)
+          ]
+        }
+        actual = subject.getSnsMessage(event)
+      })
+
+      it('returns the first sns message it finds', () => {
+        expect(actual).toEqual('the-fist-sns-message')
+      })
     })
 
-    it('returns the first sns message it finds', () => {
-      expect(actual).toEqual('the-fist-sns-message')
+    describe('when the message is JSON', () => {
+      beforeEach(() => {
+        const event = {
+          Records: [
+            {
+              Sns: {
+                Message: '{"key": "the-first-sns-message"}'
+              }
+            },
+            {
+              Sns: {
+                Message: 'the-second-sns-message'
+              }
+            }
+          ]
+        }
+        actual = subject.getSnsMessage(event)
+      })
+
+      it('returns the first sns message it finds as an object', () => {
+        expect(actual).toEqual({
+          key: 'the-first-sns-message'
+        })
+      })
     })
   })
 

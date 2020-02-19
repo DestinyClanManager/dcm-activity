@@ -1,13 +1,16 @@
 module.exports.getSnsMessage = event => {
-  let message
-
   try {
-    message = event.Records[0].Sns.Message
+    const message = event.Records[0].Sns.Message
+    try {
+      const parsed = JSON.parse(message)
+      return parsed
+    } catch (e) {
+      return message
+    }
   } catch (error) {
     console.error(error)
+    throw error
   }
-
-  return message
 }
 
 module.exports.errorResponse = error => ({

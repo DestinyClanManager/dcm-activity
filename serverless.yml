@@ -10,7 +10,7 @@ service: dcm-activity
 # The `provider` block defines where your service will be deployed
 provider:
   name: aws
-  runtime: nodejs8.10
+  runtime: nodejs12.x
   stage: dev
   region: us-east-1
   memorySize: 512
