@@ -10,7 +10,7 @@
   "keywords": [],
   "author": "",
   "dependencies": {
-    "aws-sdk": "^2.469.0",
+    "aws-sdk": "^2.814.0",
     "extend": ">=3.0.2",
     "request": "^2.88.0",
     "request-promise": "^4.2.2"
